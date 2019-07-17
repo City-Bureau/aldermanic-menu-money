@@ -1,0 +1,6 @@
+.DS_Store
+.venv
+.vscode
+input/*.pdf
+output/*.csv
+tabula.jar
