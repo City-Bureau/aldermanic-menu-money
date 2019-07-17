@@ -28,7 +28,7 @@ clean:
 	rm -f input/*.pdf input/*.csv output/*.csv
 
 output/%.csv: input/%.csv
-	cat $< | python scripts/process_pdf.py $* > $@
+	cat $< | python scripts/process_budget.py $* > $@
 
 input/%.csv: input/%.pdf tabula.jar
 	java -jar tabula.jar -p all -t $(PARAMS_$*) $< > $@

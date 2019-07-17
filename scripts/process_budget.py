@@ -31,6 +31,7 @@ def process_early():
         else:
             rows.append(
                 {
+                    "year": sys.argv[1],
                     "ward": ward,
                     "dept": dept,
                     "program": program,
@@ -44,6 +45,7 @@ def process_early():
     writer = csv.DictWriter(
         sys.stdout,
         fieldnames=[
+            "year",
             "ward",
             "dept",
             "program",
@@ -73,6 +75,7 @@ def process_recent():
         else:
             rows.append(
                 {
+                    "year": sys.argv[1],
                     "ward": ward,
                     "desc": row[0].strip(),
                     "location": row[1].strip(),
@@ -80,7 +83,7 @@ def process_recent():
                 }
             )
     writer = csv.DictWriter(
-        sys.stdout, fieldnames=["ward", "desc", "location", "est_cost"]
+        sys.stdout, fieldnames=["year", "ward", "desc", "location", "est_cost"]
     )
     writer.writeheader()
     writer.writerows(rows)

@@ -1,6 +1,7 @@
 .DS_Store
 .venv
 .vscode
+input/*.csv
 input/*.pdf
 output/*.csv
 tabula.jar
