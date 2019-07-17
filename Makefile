@@ -16,16 +16,17 @@ PARAMS_2016 = -a 56,35,552,720 -c 247,606
 PARAMS_2017 = -a 56,35,552,720 -c 258,616
 PARAMS_2018 = -a 56,35,552,720 -c 247,606
 
-GENERATED_FILES = $(foreach y, $(YEARS), output/$(y).csv)
-
 .PHONY: all clean
 
 .PRECIOUS: output/%.csv input/%.csv input/%.pdf tabula.jar
 
-all: $(GENERATED_FILES)
+all: output/menu.csv
 
 clean:
 	rm -f input/*.pdf input/*.csv output/*.csv
+
+output/menu.csv: $(foreach y, $(YEARS), output/$(y).csv)
+	csvstack $^ > $@
 
 output/%.csv: input/%.csv
 	cat $< | python scripts/process_budget.py $* > $@

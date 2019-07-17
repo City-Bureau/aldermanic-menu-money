@@ -3,12 +3,81 @@ import re
 import sys
 
 
-def process_early():
+def get_category(program, dept=""):
+    if dept == "CDOT: DEO" or any(
+        w in program for w in ["Light", "LED", "Signal", "Floodlight", "Arrow", "Flash"]
+    ):
+        return "Lighting"
+    if any(
+        w in program.lower()
+        for w in [" arts ", " art ", "mural", "sculpture", "public art", "mosaic"]
+    ):
+        return "Arts"
+    if dept == "CDOT: COMM" or any(
+        w in program
+        for w in [
+            "Alley",
+            "alleys",
+            "Pavement",
+            "Curb",
+            "Sidewalk",
+            "Resurfa",
+            "In-Road",
+            "CDOT",
+            "Bollard",
+            "Bump",
+            "Hump",
+            "Speed",
+            "Pedestrian",
+            "Parking",
+            "Viaduct",
+            "Highway",
+            "Lane",
+            "Traffic",
+            "Bus Pad",
+            "Ramp",
+            "Median",
+            "Underpass",
+            "Boulevard",
+            "-de-",  # Cul-de-sac
+        ]
+    ):
+        return "Streets/CDOT"
+    if "camera" in program.lower():
+        return "Cameras"
+    if any(
+        w in program for w in ["School", "Elementary", "Academy", "College Prep", "CPS"]
+    ):
+        return "Schools"
+    if "librar" in program.lower():
+        return "Libraries"
+    if any(
+        w in program.lower()
+        for w in [
+            "park",
+            "pond",
+            "greenway",
+            " beach",
+            "landscap",
+            "baseball",
+            "playlot",
+            "swings",
+        ]
+    ):
+        return "Parks"
+    if any(w in program for w in ["Tree", "Garden"]):
+        return "Trees, Gardens"
+    if "Misc" in program:
+        return "Misc"
+    return "Other"
+
+
+def process_early(stdin, year):
     rows = []
     ward = ""
     dept = ""
     program = ""
-    csv_rows = [row for row in csv.reader(sys.stdin)]
+    csv_rows = [row for row in csv.reader(stdin)]
     for idx, row in enumerate(csv_rows):
         paren_match = re.search(r"^\([\d\-]{1,3}\)$", row[0].strip())
         if (
@@ -36,7 +105,7 @@ def process_early():
         else:
             rows.append(
                 {
-                    "year": sys.argv[1],
+                    "year": year,
                     "ward": ward,
                     "dept": dept,
                     "program": program,
@@ -51,6 +120,50 @@ def process_early():
         row["desc"] = re.sub(r"\s+", " ", row["desc"]).strip()
         row["location"] = re.sub(r"\s+", " ", row["location"]).strip()
         row["location"] = re.sub(r"(?<=[A-Z])&(?=[A-Z])", " & ", row["location"])
+        row["category"] = get_category(row["program"], dept=row["dept"])
+    return rows
+
+
+def process_recent(stdin, year):
+    rows = []
+    ward = ""
+    for idx, row in enumerate(csv.reader(stdin)):
+        if all(c.strip() == "" for c in row) or any(
+            w in row[0] for w in ["MenuPackage", "TOTAL", "MENU BUDGET", "BALANCE"]
+        ):
+            continue
+        if row[0].startswith("Ward:"):
+            ward = row[0].split(":")[-1].strip()
+        elif len(rows) > 0 and rows[-1]["est_cost"] == "":
+            for idx, field in enumerate(["program", "location", "est_cost"]):
+                rows[-1][field] = " ".join([rows[-1][field], row[idx].strip()]).strip()
+        else:
+            rows.append(
+                {
+                    "year": year,
+                    "ward": ward,
+                    "dept": "",
+                    "program": row[0].strip(),
+                    "location": row[1].strip(),
+                    "desc": "",
+                    "blocks": "",
+                    "unit_count": "",
+                    "est_cost": row[2].strip(),
+                }
+            )
+    for row in rows:
+        row["program"] = re.sub(r"\s+", " ", row["program"]).strip()
+        row["location"] = re.sub(r"\s+", " ", row["location"]).strip()
+        row["location"] = re.sub(r"(?<=[A-Z])&(?=[A-Z])", " & ", row["location"])
+        row["category"] = get_category(row["program"])
+    return rows
+
+
+if __name__ == "__main__":
+    if sys.argv[1] < "2016":
+        rows = process_early(sys.stdin, sys.argv[1])
+    else:
+        rows = process_recent(sys.stdin, sys.argv[1])
     writer = csv.DictWriter(
         sys.stdout,
         fieldnames=[
@@ -58,6 +171,7 @@ def process_early():
             "ward",
             "dept",
             "program",
+            "category",
             "location",
             "desc",
             "blocks",
@@ -67,44 +181,3 @@ def process_early():
     )
     writer.writeheader()
     writer.writerows(rows)
-
-
-def process_recent():
-    rows = []
-    ward = ""
-    for idx, row in enumerate(csv.reader(sys.stdin)):
-        if all(c.strip() == "" for c in row) or any(
-            w in row[0] for w in ["MenuPackage", "TOTAL", "MENU BUDGET", "BALANCE"]
-        ):
-            continue
-        if row[0].startswith("Ward:"):
-            ward = row[0].split(":")[-1].strip()
-        elif len(rows) > 0 and rows[-1]["est_cost"] == "":
-            for idx, field in enumerate(["desc", "location", "est_cost"]):
-                rows[-1][field] = " ".join([rows[-1][field], row[idx].strip()]).strip()
-        else:
-            rows.append(
-                {
-                    "year": sys.argv[1],
-                    "ward": ward,
-                    "desc": row[0].strip(),
-                    "location": row[1].strip(),
-                    "est_cost": row[2].strip(),
-                }
-            )
-    for row in rows:
-        row["desc"] = re.sub(r"\s+", " ", row["desc"]).strip()
-        row["location"] = re.sub(r"\s+", " ", row["location"]).strip()
-        row["location"] = re.sub(r"(?<=[A-Z])&(?=[A-Z])", " & ", row["location"])
-    writer = csv.DictWriter(
-        sys.stdout, fieldnames=["year", "ward", "desc", "location", "est_cost"]
-    )
-    writer.writeheader()
-    writer.writerows(rows)
-
-
-if __name__ == "__main__":
-    if sys.argv[1] < "2016":
-        process_early()
-    else:
-        process_recent()
