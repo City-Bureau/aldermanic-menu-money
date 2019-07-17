@@ -20,7 +20,7 @@ def process_early():
 
         dept_match = re.search(r"[A-Z]{2,6}\s*:\s*[A-Z]{2,6}", row[0])
         if dept_match:
-            dept = dept_match.group()
+            dept = dept_match.group().replace(" :", ":")
         elif row[0].startswith("Program"):
             program = row[0].split(":")[-1].strip()
         elif "Ward" in row[0]:
@@ -35,13 +35,17 @@ def process_early():
                     "ward": ward,
                     "dept": dept,
                     "program": program,
-                    "location": row[0],
-                    "desc": row[1],
+                    "location": row[0].strip(),
+                    "desc": row[1].strip(),
                     "blocks": row[2],
                     "unit_count": row[3],
                     "est_cost": row[4],
                 }
             )
+    for row in rows:
+        row["desc"] = re.sub(r"\s+", " ", row["desc"]).strip()
+        row["location"] = re.sub(r"\s+", " ", row["location"]).strip()
+        row["location"] = re.sub(r"(?<=[A-Z])&(?=[A-Z])", " & ", row["location"])
     writer = csv.DictWriter(
         sys.stdout,
         fieldnames=[
@@ -64,14 +68,15 @@ def process_recent():
     rows = []
     ward = ""
     for idx, row in enumerate(csv.reader(sys.stdin)):
-        # TODO: Ignore totals
-        if all(c.strip() == "" for c in row) or "MenuPackage" in row:
+        if all(c.strip() == "" for c in row) or any(
+            w in row[0] for w in ["MenuPackage", "TOTAL", "MENU BUDGET", "BALANCE"]
+        ):
             continue
         if row[0].startswith("Ward:"):
             ward = row[0].split(":")[-1].strip()
         elif len(rows) > 0 and rows[-1]["est_cost"] == "":
             for idx, field in enumerate(["desc", "location", "est_cost"]):
-                rows[-1][field] = " ".join([rows[-1][field], row[idx]]).strip()
+                rows[-1][field] = " ".join([rows[-1][field], row[idx].strip()]).strip()
         else:
             rows.append(
                 {
@@ -82,6 +87,10 @@ def process_recent():
                     "est_cost": row[2].strip(),
                 }
             )
+    for row in rows:
+        row["desc"] = re.sub(r"\s+", " ", row["desc"]).strip()
+        row["location"] = re.sub(r"\s+", " ", row["location"]).strip()
+        row["location"] = re.sub(r"(?<=[A-Z])&(?=[A-Z])", " & ", row["location"])
     writer = csv.DictWriter(
         sys.stdout, fieldnames=["year", "ward", "desc", "location", "est_cost"]
     )

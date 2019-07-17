@@ -20,7 +20,7 @@ GENERATED_FILES = $(foreach y, $(YEARS), output/$(y).csv)
 
 .PHONY: all clean
 
-.PRECIOUS: output/%.csv input/%.pdf tabula.jar
+.PRECIOUS: output/%.csv input/%.csv input/%.pdf tabula.jar
 
 all: $(GENERATED_FILES)
 
