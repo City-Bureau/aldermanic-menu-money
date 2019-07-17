@@ -8,13 +8,16 @@ def process_early():
     ward = ""
     dept = ""
     program = ""
-    for idx, row in enumerate(csv.reader(sys.stdin)):
+    csv_rows = [row for row in csv.reader(sys.stdin)]
+    for idx, row in enumerate(csv_rows):
         paren_match = re.search(r"^\([\d\-]{1,3}\)$", row[0].strip())
         if (
             row[0].strip() == ""
             or paren_match
             or all(c.strip() == "" for c in row)
-            or any(any(w in c for w in ["Page ", "Menu", "Full Address"]) for c in row)
+            or any(
+                any(w in c for w in ["Page ", "Budget", "Full Address"]) for c in row
+            )
         ):
             continue
 
@@ -23,6 +26,8 @@ def process_early():
             dept = dept_match.group().replace(" :", ":")
         elif row[0].startswith("Program"):
             program = row[0].split(":")[-1].strip()
+        elif idx > 0 and csv_rows[idx - 1][0].startswith("Program"):
+            program = " ".join([program, row[0].strip()])
         elif "Ward" in row[0]:
             ward = row[0].split(":")[-1].strip()
         elif all(c.strip() == "" for c in row[1:]):
