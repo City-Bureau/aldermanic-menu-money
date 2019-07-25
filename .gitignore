@@ -4,4 +4,5 @@
 input/*.csv
 input/*.pdf
 output/*.csv
+!output/menu.csv
 tabula.jar
